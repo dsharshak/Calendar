@@ -1,0 +1,322 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Calendar</title>
+
+<style>
+      html, body
+      {
+          width: 100%;
+          height: 100%;
+          margin: 0px;
+      }
+      
+      
+      table
+      {
+          border-collapse: collapse;
+      }
+      
+      th
+      {
+          height: 80px;
+      }
+      
+      td
+      {
+          width: 150px;
+          height: 80px;
+      }
+      
+      td, th
+      {
+          border: 1px solid #E8E8E8;
+          padding: 3px;
+          text-align: center;
+      }
+      
+      .greyText
+      {
+          color:Gray;
+          }
+      
+      .currentDay
+      {
+          background-color:#E8E8E8;
+      }
+      
+      .selectTD
+      {
+        background-color:#6495ED;  
+      }
+      
+      #header
+      {
+          height: 40px;
+          width: 1058px;
+          background-color: #E8E8E8;
+          margin: 0px auto;
+          position: relative;
+      }
+      
+      #action
+      {
+          float: left;
+          position: absolute;
+          bottom: 10px;
+          left: 29px;
+      }
+      
+      #search
+      {
+          float: left;
+          position: absolute;
+          bottom: 10px;
+          right: 30px;
+      }
+      
+      
+      #content
+      {
+          height: 600px;
+          width: 1058px;
+          margin: 0px auto;
+          position: relative;
+          -moz-box-sizing: border-box; /* Для Firefox */
+          -webkit-box-sizing: border-box; /* Для Safari и Chrome */
+          box-sizing: border-box; /* Для IE и Opera */
+          border: 1px solid;
+          border-color: #E8E8E8;
+          padding-left: 30px;
+          padding-right: 30px;
+      }
+      
+      .cellHeader
+      {
+          height: 20px;
+          text-align: left;
+      }
+      
+      .cellBody
+      {
+          height: 60px;
+      }
+  </style>
+
+    <script type="text/javascript">
+        var month = new Array("Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь");
+        var days = new Array("Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье");    
+        var globalDate;
+
+        window.onload = function () {
+            globalDate = new Date();
+            createCalendar(globalDate);
+        }
+
+        function createCalendar(date) {
+            var elem = document.getElementById("calendar");
+            var countRow = 1;
+            var table = '<table id="tableCalendar" cellpadding=0, cellspacing=0><tr>';
+            SetMonth(date);
+
+            var currentDate = new Date(); //Текушая дата
+            var d = new Date(date.getFullYear(), date.getMonth(), 1); // построение начинается с первого дня месяца
+            
+            // заполнить первый ряд от понедельника
+            // и до дня, с которого начинается месяц
+            var indexColumn = getDay(d);
+            var countDaysPreviousMonth = getCountDaysPreviousMonth(d); // количество дней в предыдущем месяце
+            var numberDays = countDaysPreviousMonth - (indexColumn - 1);   // номер дня предыдущего месяца с которого начинается заполнение ячеек до первого дня текущего месяца
+
+            for (var i = 0; i < indexColumn; i++) {
+                table += createTD(days[i] + ',' + numberDays, false, true, getID(d,numberDays,-1)); 
+                numberDays++;
+            }
+
+            var mon = d.getMonth();
+            var value = "";
+            // ячейки календаря с датами
+            while (d.getMonth() == mon) {
+                if (countRow == 1) {
+                    value = days[indexColumn] + ', ' + d.getDate();
+                    indexColumn++;
+                }
+                else value = d.getDate();
+
+                table += createTD(value, isCompareDate(d, currentDate), false, getID(d, d.getDate(), 0));
+
+                if (getDay(d) % 7 == 6) { // вс, последний день - перевод строки
+                    table += '</tr><tr>';
+                    countRow++;
+                }
+
+                d.setDate(d.getDate() + 1);
+            }
+
+            // добить таблицу пустыми ячейками, если нужно
+            var numberStart = 1;
+            for (var i = getDay(d); i < 7; i++) {
+                table += createTD(numberStart, false, true, getID(d,numberStart,0));
+                numberStart++;
+            }
+            table += '</tr>';
+
+            //если строк меньше 6 добавляю их до нужного числа
+            while (countRow != 6) {
+                table += '<tr>';
+                for (var i = 0; i < 7; i++) {
+                    table += createTD(numberStart, false, true, getID(d, numberStart, 0));
+                    numberStart++;
+                }
+                table += '</tr>';
+                countRow++;
+            }
+            
+            table += '</table>';
+            elem.innerHTML = table;
+        }
+
+        //Установить название текущего месяца в элемент
+        function SetMonth(date) {
+            var elem = document.getElementById("month");
+            elem.innerHTML = month[date.getMonth()] +" "+ date.getFullYear();
+        }
+
+
+        function createTD(value, isCurrentDay,isOtherMonth, id) {
+            var arrayClass = new Array();
+            if (isCurrentDay) arrayClass.push("currentDay");
+            if (isOtherMonth) arrayClass.push("greyText");
+            return '<td id="'+ id +'" onclick="OnClickTD(this)" class=' + arrayClass + '><div class="cellHeader">' + value + '</div><div class="cellBody"></div></td>';
+        }
+
+        function OnClickTD(td) {
+            var table = document.getElementById("tableCalendar");
+            for (var i = 0; i < table.rows.length; i++) {
+                for (var j = 0; j < 7; j++) {
+                    if (table.rows[i].cells[j].className == 'selectTD') {
+                        table.rows[i].cells[j].className = table.rows[i].cells[j].className.replace(/(?:^|\s)selectTD(?!\S)/, '');
+                        break;
+                    }      
+                }
+            }
+            
+            td.setAttribute('class', 'selectTD');
+        }
+
+        function isCompareDate(d1, d2) {
+            d1 = setTimeNULL(d1);
+            d2 = setTimeNULL(d2);
+            return d1.valueOf() == d2.valueOf();
+        }
+
+        function setTimeNULL(date) {
+            date.setHours(0);
+            date.setMilliseconds(0);
+            date.setMinutes(0);
+            date.setSeconds(0);
+
+            return date;
+        }
+
+        ///создает идентификатор для TD
+        /// date - дата на которую строиться календарь (актуальный месяц)
+        /// day - день месяца
+        /// monthNumber - 0 (текущий), -1(предыдущий), 1(следующий)
+        function getID(date, day, monthNumber) {
+            var d = new Date(date);
+            d.setMonth(d.getMonth() + monthNumber);
+            d.setDate(day);
+            d = setTimeNULL(d);
+            return d.valueOf();
+
+        }
+
+        function getDay(date) { // получить номер дня недели, от 0(пн) до 6(вс)
+            var day = date.getDay();
+            if (day == 0) day = 7;
+            return day - 1;
+        }
+
+        //Получить поличество дней в предыдущем месяце
+        function getCountDaysPreviousMonth(date) {
+            var d = new Date(date);
+            d.setMonth(d.getMonth() - 1);
+
+            return daysInMounth(d.getMonth(), d.getFullYear());
+        }
+
+        ///Количество дней в месяце
+        function daysInMounth(mouth, year) {
+            if (mouth == 4 || mouth == 6 || mouth == 9 || mouth == 11) {
+                return 30;
+            }
+            if (mouth == 2) {
+                return (((year % 4 == 0) && ((!(year % 100 == 0)) || (year % 400 == 0))) ? 29 : 28);
+            }
+            return 31;
+        };
+
+
+        //Предыдущий месяц
+        function PreviousMonth() {
+            globalDate = GetDate(-1);
+            createCalendar(globalDate);
+        }
+
+        //Слудующий месяц
+        function NextMonth() {
+            globalDate = GetDate(1);
+            createCalendar(globalDate);
+        }
+
+        //Текущий месяц
+        function CurrentMonth() {
+            globalDate = new Date();
+            createCalendar(globalDate);
+        }
+
+        function GetDate(index) {
+            var date = new Date(globalDate);
+            date.setMonth(date.getMonth() + index);
+            return date;
+        }
+    </script>
+</head>
+<body>
+	<div id="header">
+    	<div id="action">
+        	<input type="button" style="background:blue; color:White" value ="Добавить"/>
+        	<input type="button" style="background:blue; color:White" value ="Удалить"/>
+    	</div>
+    	<div id="search">
+        	<input type="text"/>
+    	</div>
+	</div>
+
+	<div id="content">
+    		<div>
+        		<div style="float:left"><input type="button" onclick="PreviousMonth()" value ="<"/></div>
+        		<div id="month" style="float:left; width:120px; padding-left:5px;padding-right:5px; text-align:center;font-weight:bold"></div>
+        		<input type="button" onclick="NextMonth()" value =">"/>
+        		<input type="button" onclick="CurrentMonth()" value ="Сегодня"/>
+    		</div>
+    		<div id ="calendar"> </div>
+	</div>
+</body>
+</html>
+
+
+    
+
+
+
+
+
+
+
+
+
+  
